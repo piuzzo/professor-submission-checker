@@ -99,14 +99,34 @@ for filename in os.listdir(target_dir):
     # 2. Fallback: check filename (if not already matched)
     if not matched_person:
         filename_lower = filename.lower()
-        for person in expected_people:
-            surname = person['parts'][0]
-            if surname in filename_lower:
-                    matched_person = person
-                    break
+        best_match = None
+        max_parts_matched = 0
         
-        if matched_person:
-            print(f"[FOUND] {filename} -> {matched_person['full']} (matched in filename)")
+        for person in expected_people:
+            parts_matched = 0
+            for part in person['parts']:
+                if part in filename_lower:
+                    parts_matched += 1
+            
+            # We require at least the surname (first part) to be present usually, 
+            # but let's just go with max parts for now.
+            # Actually, let's require at least 1 part.
+            
+            if parts_matched > 0:
+                if parts_matched > max_parts_matched:
+                    max_parts_matched = parts_matched
+                    best_match = person
+                elif parts_matched == max_parts_matched:
+                    # Tie breaking?
+                    # If we have "Romano" and matches both, we might have an issue if filename is just "Romano.pdf".
+                    # But if filename is "Federico Romano", Federico gets 2, Maurizio gets 1.
+                    pass
+        
+        if best_match:
+             # Optional: set a threshold? e.g. if only 1 part matched and it's a common surname...
+             # But for now, best match is better than first match.
+             matched_person = best_match
+             print(f"[FOUND] {filename} -> {matched_person['full']} (matched in filename with {max_parts_matched} parts)")
         else:
             print(f"[UNKNOWN] {filename} -> Could not identify person from text or filename")
     
