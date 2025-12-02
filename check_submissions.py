@@ -1,5 +1,6 @@
 import os
 import pypdf
+import pandas as pd
 
 # List of expected professors
 expected_names_text = """
@@ -69,6 +70,31 @@ for filename in os.listdir(target_dir):
                  print(f"[FOUND] {filename} -> {matched_person['full']} (matched in text)")
         except Exception as e:
             print(f"[ERROR] Could not read PDF {filename}: {e}")
+
+    # 2. Try text extraction if Excel
+    elif filename.lower().endswith((".xls", ".xlsx")):
+        try:
+            # Read excel, convert to string to search
+            # header=None to read all cells including headers
+            df = pd.read_excel(file_path, header=None)
+            text = df.to_string()
+            text_lower = text.lower()
+            
+            for person in expected_people:
+                parts_matched = 0
+                for part in person['parts']:
+                    if part in text_lower:
+                        parts_matched += 1
+                
+                if parts_matched == len(person['parts']):
+                    matched_person = person
+                    break
+            
+            if matched_person:
+                 print(f"[FOUND] {filename} -> {matched_person['full']} (matched in excel content)")
+        except Exception as e:
+             # Some files might be corrupted or password protected
+             print(f"[ERROR] Could not read Excel {filename}: {e}")
 
     # 2. Fallback: check filename (if not already matched)
     if not matched_person:
